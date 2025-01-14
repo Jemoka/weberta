@@ -9,7 +9,7 @@ parser.add_argument("--wandb", default=False, action="store_true", help="whether
 parser.add_argument("--warm_start", default=None, type=str, help="recover trainer from this path")
 
 # intervals
-parser.add_argument("--report_interval", default=64, type=int, help="save to wandb every this many steps")
+parser.add_argument("--report_interval", default=32, type=int, help="save to wandb every this many steps")
 parser.add_argument("--checkpoint_interval", default=256, type=int, help="checkpoint every this many steps")
 parser.add_argument("--validation_interval", default=256, type=int, help="validate every this many steps")
 
@@ -22,8 +22,8 @@ parser.add_argument("--mlm_probability", help="how much to mask", type=float, de
 parser.add_argument("--base", help="what is the base model type we are training (has to be an MLM)", type=str, default="FacebookAI/roberta-base")
 
 # hyperparameters
-parser.add_argument("--lr", help="learning rate", type=float, default=1e-4)
-parser.add_argument("--epochs", help="number of epochs to train", type=int, default=1)
-parser.add_argument("--batch_size", help="batches per device", type=int, default=16)
+parser.add_argument("--lr", help="learning rate", type=float, default=6e-4)
+parser.add_argument("--epochs", help="number of epochs to train", type=int, default=1000000)
+parser.add_argument("--batch_size", help="batches per device", type=int, default=32)
 parser.add_argument("--warmup_pct", help="how much to warm up", type=float, default=0.01)
 

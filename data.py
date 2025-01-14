@@ -89,6 +89,8 @@ def make_dl(ds, tokenizer, batch_size=16, mlm_probability=0.15, shuffle_buffer_s
         batch_size=batch_size
     )
 
+    return dl
+
 def load_dls(args):
     tokenizer = AutoTokenizer.from_pretrained(args.base)
 

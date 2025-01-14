@@ -105,13 +105,13 @@ class Trainer:
         with torch.inference_mode():
             for batch in self.val_dl:
                 with torch.inference_mode():
-                    _, m = self.step(batch)
-                    all_losses.append(m["train/loss"])
+                    loss = self.model(**batch).loss
+                    all_losses.append(self.gather(loss))
 
         metrics = {"val/loss": sum(all_losses)/len(all_losses)}
         score = 1/(sum(all_losses)/len(all_losses))
 
-        return score, metrics
+        return score.cpu().item(), metrics
 
     def epoch(self):
         if self.accelerator.is_main_process:
@@ -158,7 +158,7 @@ class Trainer:
         self.train_dl_skipped = None
 
     def step(self, batch):
-        loss = self.model(**batch)
+        loss = self.model(**batch).loss
 
         self.accelerator.backward(loss)
         self.optim.step()
@@ -186,7 +186,7 @@ class Trainer:
 
     def save(self, path):
         logger.debug("CHECKPOINT | saving checkpoint at {}", path)
-        self.accelerator.save_state(path)
+        self.accelerator.save_state(path, safe_serialization=False)
         with open(os.path.join(path, "config.json"), 'w') as df:
             json.dump({
                 "config": vars(self.args),

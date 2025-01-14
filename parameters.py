@@ -1,6 +1,6 @@
 import argparse
 
-parser = argparse.ArgumentParser(prog='adventure')
+parser = argparse.ArgumentParser(prog='weberta')
 
 # logistics
 parser.add_argument("experiment", help="name for the experiment", type=str)

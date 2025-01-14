@@ -43,7 +43,7 @@ class Trainer:
         self.args = args
         self.accelerator = Accelerator(log_with="wandb")
         self.accelerator.init_trackers(
-            project_name="adventure", 
+            project_name="weberta", 
             config=vars(args),
             init_kwargs={"wandb": {"mode": None if args.wandb else "disabled",
                                    "name": args.experiment}},

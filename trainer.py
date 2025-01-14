@@ -71,7 +71,7 @@ class Trainer:
         self.optim = AdamW(self.model.parameters(), lr=args.lr)
 
         # compute training size + the counter (useful for mid-checkpoint recovery) 
-        self.total_batches = int(1170381//args.batch_size) # TODO hard coding david's dataset size
+        self.total_batches = int(1170381//args.batch_size)*args.epochs # TODO hard coding david's dataset size
         self.global_step_counter_ = 0
         self.best_val_score_ = float("-inf") # "score" means higher is better 
 

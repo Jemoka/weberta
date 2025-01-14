@@ -23,7 +23,7 @@ parser.add_argument("--base", help="what is the base model type we are training 
 
 # hyperparameters
 parser.add_argument("--lr", help="learning rate", type=float, default=6e-4)
-parser.add_argument("--epochs", help="number of epochs to train", type=int, default=1000000)
+parser.add_argument("--epochs", help="number of epochs to train", type=int, default=20)
 parser.add_argument("--batch_size", help="batches per device", type=int, default=32)
 parser.add_argument("--warmup_pct", help="how much to warm up", type=float, default=0.01)
 

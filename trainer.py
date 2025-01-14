@@ -22,7 +22,7 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import SequentialLR, LinearLR
 
 # huggingface
-from transformers import AutoConfig, AutoModel, AutoTokenizer
+from transformers import AutoConfig, AutoModelForMaskedLM, AutoTokenizer
 
 # MLOps
 import wandb
@@ -56,18 +56,13 @@ class Trainer:
         self.save_dir = str(save_dir / "checkpoint")
         self.best_dir = str(save_dir / "best")
 
-        # <<<<<<< set up models <<<<<<<
-        # 
-        # self.model = ...
-        #
-        # >>>>>>> set up models >>>>>>>
+        # set up models
+        self.model_config = AutoConfig.from_pretrained(args.base)
+        self.model = AutoModelForMaskedLM.from_config(self.model_config)
 
-        # <<<<<<< set up data <<<<<<<
-        #    
-        # self.train_dl = ...
-        # self.val_dl = ...
-        #    
-        # >>>>>>> set up data >>>>>>>
+        # set up data
+        (self.train_dl, self.val_dl) = load_dls(args)
+
         # leave blank
         # this will exist if we are resuming from checkpoint
         self.train_dl_skipped = None 
@@ -76,13 +71,19 @@ class Trainer:
         self.optim = AdamW(self.model.parameters(), lr=args.lr)
 
         # compute training size + the counter (useful for mid-checkpoint recovery) 
-        self.total_batches = len(self.train_dl)
+        self.total_batches = int(1170381//args.batch_size) # TODO hard coding david's dataset size
         self.global_step_counter_ = 0
         self.best_val_score_ = float("-inf") # "score" means higher is better 
 
+        # buliding scheduler
+        warmup_steps = int(args.warmup_pct*self.total_batches)
+        scheduler1 = LinearLR(self.optim, start_factor=1e-20, end_factor=1, total_iters=warmup_steps)
+        scheduler2 = LinearLR(self.optim, start_factor=1, end_factor=0, total_iters=(self.total_batches-warmup_steps))
+        self.scheduler = SequentialLR(self.optim, schedulers=[scheduler1, scheduler2], milestones=[warmup_steps])
+
         # weeeeeeeeeeee
-        (self.model, self.optim, self.train_dl, self.val_dl) = self.accelerator.prepare(
-            self.model, self.optim, self.train_dl, self.val_dl)
+        (self.model, self.optim, self.train_dl, self.val_dl, self.scheduler) = self.accelerator.prepare(
+            self.model, self.optim, self.train_dl, self.val_dl, self.scheduler)
         if self.accelerator.is_main_process:
             wandb.watch(self.model)
 
@@ -100,16 +101,17 @@ class Trainer:
         self.accelerator.end_training()
 
     def val(self):
+        all_losses = []
         with torch.inference_mode():
-            # <<<<<<< do some validation <<<<<<<
-            # 
-            # # remeber, score is higher = better
-            # score = self.gather(...).cpu().item()
-            # metrics = { "val/metric": ... }
-            # 
-            # >>>>>>> do some validation >>>>>>>
+            for batch in self.val_dl:
+                with torch.inference_mode():
+                    _, m = self.step(batch)
+                    all_losses.append(m["train/loss"])
 
-            return score, metrics
+        metrics = {"val/loss": sum(all_losses)/len(all_losses)}
+        score = 1/(sum(all_losses)/len(all_losses))
+
+        return score, metrics
 
     def epoch(self):
         if self.accelerator.is_main_process:
@@ -118,8 +120,6 @@ class Trainer:
         # because sometimes the load function may skip some epochs
         dl = self.train_dl if not self.train_dl_skipped else self.train_dl_skipped
         for indx, i in enumerate(dl):
-            # <<<<<<< do some setup <<<<<<<
-            # >>>>>>> do some setup >>>>>>>
 
             # take a step
             loss, train_metrics = self.step(i)
@@ -158,27 +158,15 @@ class Trainer:
         self.train_dl_skipped = None
 
     def step(self, batch):
-        # <<<<<<< do some work <<<<<<<
-        # 
-        # loss = self.model(**batch, ...)
-        #
-        # >>>>>>> do some work >>>>>>>
+        loss = self.model(**batch)
 
         self.accelerator.backward(loss)
         self.optim.step()
-        # >>>>>>> scheduler shenanigans >>>>>>>
-        # 
-        # self.scheduler.step()
-        # 
-        # >>>>>>> scheduler shenanigans >>>>>>>
+        self.scheduler.step()
         self.optim.zero_grad()
 
-        # <<<<<<< prepare metrics <<<<<<<
-        # 
-        # loss = self.gather(loss).cpu().item() 
-        # metrics = { "train/loss": ... }
-        #
-        # >>>>>>> prepare metrics >>>>>>>
+        loss = self.gather(loss).cpu().item() 
+        metrics = { "train/loss": loss }
 
         return loss, metrics
         

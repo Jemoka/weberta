@@ -20,6 +20,5 @@ logger.add(
 from trainer import Trainer
 from commands import configure
 
-
-
+import random
 

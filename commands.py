@@ -15,11 +15,7 @@ def execute(args):
     else:
         trainer = Trainer(args)
 
-    # <<<<<<< do something with trainer <<<<<<<
-    #
-    # trainer.train()
-    #
-    # >>>>>>> do something with trainer >>>>>>>
+    trainer.train()
 
     raise NotImplementedError("ideally, this does something")
 
